@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>다영이 상태 알림</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#5c4a3d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="다영이 상태">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <style>
+        :root {
+            --primary: #7c6a5d;
+            --primary-light: #a89485;
+            --primary-dark: #5a4a3f;
+            --secondary: #c4756e;
+            --accent: #d4a574;
+            --success: #7a9e7e;
+            --warning: #d4a574;
+            --danger: #c4756e;
+            --bg: linear-gradient(180deg, #faf8f5 0%, #f5f0e8 100%);
+            --card: rgba(255, 255, 253, 0.95);
+            --text: #4a4039;
+            --text-muted: #8a7a6a;
+            --border: rgba(124, 106, 93, 0.15);
+            --shadow: 0 8px 32px rgba(124, 106, 93, 0.12);
+            --shadow-sm: 0 4px 16px rgba(124, 106, 93, 0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: 'Malgun Gothic', -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: var(--bg); 
+            background-attachment: fixed;
+            min-height: 100vh; 
+            color: var(--text); 
+            line-height: 1.7;
+            font-size: 16px;
+        }
+        .app { max-width: 500px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+        
+        .header { 
+            text-align: center; 
+            padding: 28px 16px; 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: #faf8f5; 
+            border-radius: 0 0 28px 28px;
+            box-shadow: 0 4px 20px rgba(124, 106, 93, 0.25);
+        }
+        .header h1 { font-size: 1.3rem; font-weight: 600; letter-spacing: 1px; }
+        
+        .tab-nav { 
+            display: flex; 
+            background: var(--card); 
+            margin: -14px 16px 0;
+            padding: 6px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            position: relative;
+            z-index: 10;
+        }
+        .tab-btn { 
+            flex: 1; 
+            padding: 14px 8px; 
+            border: none; 
+            background: transparent; 
+            font-size: 0.95rem; 
+            font-weight: 600; 
+            color: var(--text-muted); 
+            cursor: pointer; 
+            transition: all 0.3s ease;
+            border-radius: 12px;
+        }
+        .tab-btn.active { 
+            color: white; 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            box-shadow: 0 4px 12px rgba(124, 106, 93, 0.3);
+        }
+        
+        .tab-content { flex: 1; display: none; padding: 20px 16px; overflow-y: auto; }
+        .tab-content.active { display: block; }
+        
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+        .status-card { 
+            background: var(--card); 
+            border-radius: 20px; 
+            padding: 20px 14px; 
+            text-align: center; 
+            box-shadow: var(--shadow-sm); 
+            border: 1px solid var(--border);
+            transition: transform 0.2s ease;
+        }
+        .status-card:active { transform: scale(0.98); }
+        .status-label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 500; }
+        .status-emoji { font-size: 2.8rem; margin: 10px 0; }
+        .status-text { font-size: 1rem; font-weight: 700; margin-top: 8px; color: var(--primary-dark); }
+        .status-time { font-size: 0.75rem; color: var(--text-muted); margin-top: 8px; }
+        
+        .section { 
+            background: var(--card); 
+            border-radius: 20px; 
+            padding: 20px; 
+            margin-bottom: 18px; 
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+        }
+        .section-title { 
+            font-size: 1.05rem; 
+            font-weight: 700; 
+            margin-bottom: 16px; 
+            padding-bottom: 12px;
+            border-bottom: 1px dashed var(--border);
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .input-group { margin-bottom: 14px; }
+        .input-label { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; display: block; color: var(--text-muted); }
+        .input-field { 
+            width: 100%; 
+            padding: 14px 16px; 
+            border: 2px solid var(--border); 
+            border-radius: 14px; 
+            font-size: 1rem; 
+            font-family: inherit; 
+            resize: none; 
+            min-height: 56px; 
+            background: rgba(250, 248, 245, 0.8);
+            color: var(--text);
+            transition: all 0.3s ease;
+        }
+        .input-field:focus { 
+            outline: none; 
+            border-color: var(--primary-light); 
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(124, 106, 93, 0.1);
+        }
+        .draft-time { font-size: 0.75rem; color: var(--text-muted); text-align: right; margin-top: 6px; }
+        
+        .btn { 
+            width: 100%; 
+            padding: 16px; 
+            border: none; 
+            border-radius: 14px; 
+            font-size: 1rem; 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: all 0.3s ease;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: #faf8f5; 
+            box-shadow: 0 4px 15px rgba(124, 106, 93, 0.3);
+        }
+        .btn-secondary { 
+            background: linear-gradient(135deg, var(--secondary) 0%, #d4918b 100%);
+            color: #faf8f5; 
+            box-shadow: 0 4px 15px rgba(196, 117, 110, 0.3);
+        }
+        .btn-outline { 
+            background: var(--card); 
+            border: 2px solid var(--border); 
+            color: var(--text); 
+        }
+        
+        .message-card { 
+            background: rgba(250, 248, 245, 0.9); 
+            border-radius: 16px; 
+            padding: 16px; 
+            margin-bottom: 12px; 
+            border: 1px solid var(--border);
+        }
+        .message-card-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 12px; 
+            padding-bottom: 10px; 
+            border-bottom: 1px dashed var(--border);
+        }
+        .message-card-time { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+        .message-card-status { display: flex; align-items: center; gap: 8px; }
+        .message-card-read { font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; font-weight: 600; }
+        .message-card-read.read { background: rgba(122, 158, 126, 0.2); color: var(--success); }
+        .message-card-read.unread { background: rgba(196, 117, 110, 0.2); color: var(--danger); }
+        .message-card-delete { 
+            width: 30px; height: 30px; 
+            border: none; 
+            background: rgba(196, 117, 110, 0.1); 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+        .message-card-delete:active { background: var(--danger); color: white; }
+        .message-card-item { display: flex; gap: 12px; margin-bottom: 10px; }
+        .message-card-item:last-child { margin-bottom: 0; }
+        .message-card-icon { 
+            width: 32px; height: 32px; 
+            border-radius: 10px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 1rem; 
+            background: rgba(212, 165, 116, 0.2);
+        }
+        .message-card-content { flex: 1; font-size: 0.95rem; line-height: 1.6; }
+        .message-card-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
+        
+        .dayoung-message { 
+            background: linear-gradient(135deg, rgba(196, 117, 110, 0.1) 0%, rgba(212, 165, 116, 0.1) 100%);
+            border-radius: 16px; 
+            padding: 14px; 
+            margin-bottom: 12px; 
+            border-left: 4px solid var(--secondary);
+        }
+        .dayoung-message-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .dayoung-message-time { font-size: 0.8rem; color: var(--text-muted); }
+        .dayoung-message-content { font-size: 0.95rem; }
+        
+        .status-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .status-option { 
+            padding: 16px 12px; 
+            border: 2px solid var(--border); 
+            border-radius: 16px; 
+            background: var(--card); 
+            cursor: pointer; 
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .status-option:active { transform: scale(0.97); }
+        .status-option.selected { 
+            border-color: var(--primary); 
+            background: linear-gradient(135deg, rgba(124, 106, 93, 0.1) 0%, rgba(168, 148, 133, 0.1) 100%);
+            box-shadow: 0 4px 12px rgba(124, 106, 93, 0.15);
+        }
+        .status-option .emoji { font-size: 2rem; display: block; margin-bottom: 8px; }
+        .status-option .label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
+        
+        .empty-state { text-align: center; padding: 36px 20px; color: var(--text-muted); }
+        .empty-state-emoji { font-size: 2.8rem; margin-bottom: 12px; opacity: 0.7; }
+        
+        .badge { 
+            display: inline-block; 
+            padding: 4px 10px; 
+            border-radius: 20px; 
+            font-size: 0.7rem; 
+            font-weight: 600; 
+            background: var(--danger); 
+            color: white; 
+            margin-left: 8px; 
+        }
+        
+        .push-banner { 
+            background: linear-gradient(135deg, var(--accent) 0%, #e0b88a 100%);
+            border-radius: 14px; 
+            padding: 14px 16px; 
+            margin-bottom: 16px; 
+            color: white; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(212, 165, 116, 0.3);
+        }
+        .push-banner.hidden { display: none; }
+        .push-banner-text { font-size: 0.95rem; font-weight: 600; }
+        .push-banner .btn { width: auto; padding: 10px 18px; background: white; color: var(--primary-dark); font-size: 0.85rem; border-radius: 10px; }
+        
+        .loading { display: flex; align-items: center; justify-content: center; min-height: 200px; }
+        .loading-spinner { 
+            width: 40px; height: 40px; 
+            border: 4px solid var(--border); 
+            border-top-color: var(--primary); 
+            border-radius: 50%; 
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .modal { 
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+            background: rgba(74, 64, 57, 0.4); 
+            backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center; 
+            z-index: 1000; 
+            opacity: 0; visibility: hidden; 
+            transition: all 0.3s ease;
+        }
+        .modal.active { opacity: 1; visibility: visible; }
+        .modal-content { 
+            background: var(--card); 
+            border-radius: 24px; 
+            padding: 28px; 
+            width: 90%; 
+            max-width: 320px; 
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+        .modal-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 20px; color: var(--primary-dark); }
+        .modal-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+        
+        .toast { 
+            position: fixed; bottom: 100px; left: 50%; 
+            transform: translateX(-50%) translateY(20px); 
+            background: var(--primary-dark); 
+            color: white; 
+            padding: 14px 24px; 
+            border-radius: 14px; 
+            font-size: 0.95rem; 
+            font-weight: 600; 
+            opacity: 0; visibility: hidden; 
+            transition: all 0.3s ease; 
+            z-index: 2000;
+            box-shadow: 0 8px 24px rgba(74, 64, 57, 0.3);
+        }
+        .toast.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+        
+        .calendar { background: var(--card); border-radius: 20px; padding: 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .calendar-title { font-size: 1.1rem; font-weight: 700; color: var(--primary-dark); }
+        .calendar-nav { 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border: none; 
+            width: 38px; height: 38px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-size: 0.9rem; 
+            color: white;
+            box-shadow: 0 2px 8px rgba(124, 106, 93, 0.25);
+        }
+        .calendar-nav:active { transform: scale(0.95); }
+        .calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; margin-bottom: 8px; }
+        .calendar-weekday { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); padding: 10px 0; }
+        .calendar-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .calendar-day { 
+            aspect-ratio: 1; 
+            display: flex; align-items: center; justify-content: center; 
+            border-radius: 12px; 
+            font-size: 0.95rem; 
+            cursor: pointer; 
+            position: relative; 
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .calendar-day:hover { background: rgba(124, 106, 93, 0.1); }
+        .calendar-day.other-month { opacity: 0.3; }
+        .calendar-day.today { background: rgba(124, 106, 93, 0.15); font-weight: 700; color: var(--primary-dark); }
+        .calendar-day.selected { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; box-shadow: 0 2px 8px rgba(124, 106, 93, 0.3); }
+        .calendar-day.has-data::after { content: ''; position: absolute; bottom: 4px; width: 5px; height: 5px; background: var(--secondary); border-radius: 50%; }
+        
+        .day-detail { margin-top: 16px; background: var(--card); border-radius: 20px; padding: 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+        .day-detail-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 16px; color: var(--primary-dark); }
+        
+        .help-list { list-style: none; font-size: 0.9rem; }
+        .help-list li { padding: 14px; background: rgba(250, 248, 245, 0.8); border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--border); }
+        .help-actions { margin-top: 16px; }
+        .update-notice { background: linear-gradient(135deg, #fff8e6 0%, #fff3cd 100%); border-radius: 12px; padding: 14px; font-size: 0.9rem; font-weight: 600; color: #8a6d3b; display: none; margin-bottom: 12px; }
+        .update-notice.show { display: block; }
+
+        .realtime-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; color: var(--success); font-weight: 600; margin-left: 8px; }
+        .realtime-badge::before { content: ''; width: 7px; height: 7px; background: var(--success); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    </style>
+</head>
+<body>
+<div class="app">
+    <header class="header">
+        <h1>다영이 상태 알림</h1>
+    </header>
+    
+    <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="home">홈</button>
+        <button class="tab-btn" data-tab="calendar">달력</button>
+        <button class="tab-btn" data-tab="dayoung">다영</button>
+    </nav>
+    
+    <button id="installBtn" class="btn btn-primary" style="margin:20px 16px 0;display:none" onclick="installApp()">앱 설치하기</button>
+    
+    <div id="tab-home" class="tab-content">
+        <div id="loading" class="loading"><div class="loading-spinner"></div></div>
+        
+        <div id="pushBanner" class="push-banner hidden">
+            <span class="push-banner-text">알림 받기</span>
+            <button class="btn" onclick="subscribePush()">허용</button>
+        </div>
+        
+        <div class="status-grid">
+            <div id="locationCard" class="status-card">
+                <div class="status-label">다영이 위치</div>
+                <div id="locationEmoji" class="status-emoji">🚶</div>
+                <div id="locationText" class="status-text">집에 가는 중</div>
+                <div id="locationTime" class="status-time"></div>
+            </div>
+            <div id="hungerCard" class="status-card">
+                <div class="status-label">배고픔</div>
+                <div id="hungerEmoji" class="status-emoji">😊</div>
+                <div id="hungerText" class="status-text">안 고파요</div>
+                <div id="hungerTime" class="status-time"></div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">오늘의 메시지 <span id="unreadBadge" class="badge" style="display:none"></span><span class="realtime-badge">실시간</span></div>
+            <div id="todayMessages"></div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">아버지 메모 작성</div>
+            <div class="input-group">
+                <label class="input-label">하고싶은 말</label>
+                <textarea id="fatherMessage" class="input-field" placeholder="다영이에게 하고싶은 말..." rows="2"></textarea>
+                <div id="fatherMessageDraftTime" class="draft-time"></div>
+            </div>
+            <div class="input-group">
+                <label class="input-label">당부</label>
+                <textarea id="fatherAdvice" class="input-field" placeholder="당부할 말..." rows="2"></textarea>
+                <div id="fatherAdviceDraftTime" class="draft-time"></div>
+            </div>
+            <div class="input-group">
+                <label class="input-label">메모</label>
+                <textarea id="fatherMemo" class="input-field" placeholder="기타 메모..." rows="2"></textarea>
+                <div id="fatherMemoDraftTime" class="draft-time"></div>
+            </div>
+            <button class="btn btn-primary" onclick="saveFatherMemo()">저장하기</button>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">도움말</div>
+            <ul class="help-list">
+                <li>홈 화면에 추가하면 앱처럼 사용 가능합니다</li>
+                <li>알림을 켜면 새 메시지를 받을 수 있습니다</li>
+                <li>데이터는 실시간으로 동기화됩니다</li>
+            </ul>
+            <div class="help-actions">
+                <div id="updateNotice" class="update-notice">새 버전이 있습니다 <button class="btn btn-outline" style="margin-top:8px" onclick="applyUpdate()">지금 업데이트</button></div>
+                <button class="btn btn-outline" onclick="refreshAppCache()">캐시 정리</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="tab-calendar" class="tab-content">
+        <div class="calendar">
+            <div class="calendar-header">
+                <button class="calendar-nav" onclick="changeMonth(-1)">◀</button>
+                <span id="calendarTitle" class="calendar-title"></span>
+                <button class="calendar-nav" onclick="changeMonth(1)">▶</button>
+            </div>
+            <div class="calendar-weekdays">
+                <div class="calendar-weekday">일</div>
+                <div class="calendar-weekday">월</div>
+                <div class="calendar-weekday">화</div>
+                <div class="calendar-weekday">수</div>
+                <div class="calendar-weekday">목</div>
+                <div class="calendar-weekday">금</div>
+                <div class="calendar-weekday">토</div>
+            </div>
+            <div id="calendarDays" class="calendar-days"></div>
+        </div>
+        
+        <div id="dayDetail" class="day-detail" style="display:none">
+            <div id="dayDetailTitle" class="day-detail-title"></div>
+            <div id="dayEntries"></div>
+            <div class="input-group" style="margin-top:16px">
+                <label class="input-label">이 날의 메모</label>
+                <textarea id="calendarMemo" class="input-field" placeholder="메모 추가..." rows="2"></textarea>
+                <div id="calendarDraftTime" class="draft-time"></div>
+            </div>
+            <div class="input-group">
+                <label class="input-label">사진 첨부</label>
+                <input type="file" accept="image/*" onchange="previewPhoto(event)" style="font-size:1rem">
+                <img id="photoPreview" style="display:none;max-width:100%;margin-top:10px;border-radius:8px">
+            </div>
+            <button class="btn btn-primary" onclick="saveCalendarEntry()">저장</button>
+        </div>
+    </div>
+    
+    <div id="tab-dayoung" class="tab-content">
+        <div id="dayoungLocked">
+            <div class="section">
+                <div class="section-title">다영이 전용 공간</div>
+                <p style="font-size:1rem;color:var(--text-muted);margin-bottom:16px">비밀번호를 입력하면 상태를 업데이트할 수 있습니다</p>
+                <button class="btn btn-secondary" onclick="showPasswordModal()">잠금 해제</button>
+            </div>
+        </div>
+        
+        <div id="dayoungUnlocked" style="display:none">
+            <div id="dayoungPushBanner" class="push-banner hidden">
+                <span class="push-banner-text">알림 받기</span>
+                <button class="btn" onclick="subscribePushDayoung()">허용</button>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">위치 상태</div>
+                <div id="locationSelector" class="status-selector">
+                    <div class="status-option" data-value="going_home"><span class="emoji">🚶</span><span class="label">집에 가는 중</span></div>
+                    <div class="status-option" data-value="at_home"><span class="emoji">🏠</span><span class="label">집 도착!</span></div>
+                    <div class="status-option" data-value="outside"><span class="emoji">🌙</span><span class="label">밖에 있어요</span></div>
+                    <div class="status-option" data-value="busy"><span class="emoji">💼</span><span class="label">바빠요</span></div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">배고픔 상태</div>
+                <div id="hungerSelector" class="status-selector">
+                    <div class="status-option" data-value="hungry"><span class="emoji">🍽️</span><span class="label">배고파요</span></div>
+                    <div class="status-option" data-value="not_hungry"><span class="emoji">😊</span><span class="label">안 고파요</span></div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">아버지께 메시지</div>
+                <div class="input-group">
+                    <textarea id="dayoungMessage" class="input-field" placeholder="아버지께 전할 말..." rows="3"></textarea>
+                    <div id="dayoungMessageDraftTime" class="draft-time"></div>
+                </div>
+                <button class="btn btn-secondary" onclick="saveDayoungStatus()">저장하기</button>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">읽지 않은 메시지</div>
+                <div id="unreadMessages"></div>
+                <button class="btn btn-outline" style="margin-top:12px" onclick="markAllRead()">모두 읽음 표시</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">비밀번호 입력</div>
+            <input type="password" id="passwordInput" class="input-field" placeholder="비밀번호" style="text-align:center;font-size:1.3rem">
+            <div class="modal-buttons">
+                <button class="btn btn-outline" onclick="closePasswordModal()">취소</button>
+                <button class="btn btn-secondary" onclick="checkPassword()">확인</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+<script>
+// Firebase 설정
+const firebaseConfig = {
+    apiKey: "AIzaSyDREb3R_vU6-3JhUKlVIMdwBa5u0gI_DpM",
+    authDomain: "dayoung-status-6908d.firebaseapp.com",
+    projectId: "dayoung-status-6908d",
+    storageBucket: "dayoung-status-6908d.firebasestorage.app",
+    messagingSenderId: "1027323577198",
+    appId: "1:1027323577198:web:232825cc70dd96d097b77f"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const DAYOUNG_PW = '2428';
+const VAPID_KEY = 'BERMAOVkfGBNqncfJSb0bMRb2q1kAqf7PRvjEPNziTjjJt6Wg5Zm65sIbLQTLdheIxSmwunm5z0VfnpzabEFrSQ';
+
+let currentData = { messages: [] };
+let selectedDate = null;
+let currentMonth = new Date();
+let selectedLocation = null;
+let selectedHunger = null;
+let photoData = null;
+
+const locMap = {going_home:{e:'🚶',t:'집에 가는 중'},at_home:{e:'🏠',t:'집 도착!'},outside:{e:'🌙',t:'밖에 있어요'},busy:{e:'💼',t:'바빠요'}};
+const hunMap = {not_hungry:{e:'😊',t:'안 고파요'},hungry:{e:'🍽️',t:'배고파요'}};
+
+// timestamp를 문자열로 변환하는 헬퍼 함수
+function normalizeTimestamp(ts) {
+    if (!ts) return '';
+    if (typeof ts === 'string') return ts;
+    if (ts.toDate) return ts.toDate().toISOString();
+    if (ts.seconds) return new Date(ts.seconds * 1000).toISOString();
+    return '';
+}
+
+function getKSTTimestamp() {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
+    });
+    const parts = formatter.formatToParts(new Date());
+    const get = (type) => parts.find(p => p.type === type)?.value || '00';
+    return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}`;
+}
+
+function getTodayKST() {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric', month: '2-digit', day: '2-digit'
+    });
+    return formatter.format(new Date());
+}
+
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('installBtn').style.display = 'block';
+});
+
+async function installApp() {
+    if (!deferredPrompt) {
+        showToast('브라우저 메뉴에서 "홈 화면에 추가"를 선택하세요');
+        return;
+    }
+    deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
+    if (result.outcome === 'accepted') showToast('앱 설치 완료!');
+    deferredPrompt = null;
+    document.getElementById('installBtn').style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initTabs();
+    initFirestore();
+    initSelectors();
+    initDraftTimePreviews();
+    registerSW();
+    checkPush();
+    renderCalendar();
+});
+
+function initTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        };
+    });
+}
+
+function initSelectors() {
+    document.querySelectorAll('#locationSelector .status-option').forEach(opt => {
+        opt.onclick = () => {
+            document.querySelectorAll('#locationSelector .status-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+            selectedLocation = opt.dataset.value;
+        };
+    });
+    document.querySelectorAll('#hungerSelector .status-option').forEach(opt => {
+        opt.onclick = () => {
+            document.querySelectorAll('#hungerSelector .status-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+            selectedHunger = opt.dataset.value;
+        };
+    });
+}
+
+function initFirestore() {
+    db.collection('status').doc('current').onSnapshot((doc) => {
+        const data = doc.data() || {};
+        currentData.location = data.location || 'going_home';
+        currentData.locationUpdated = normalizeTimestamp(data.locationUpdated);
+        currentData.hunger = data.hunger || 'not_hungry';
+        currentData.hungerUpdated = normalizeTimestamp(data.hungerUpdated);
+        updateStatusDisplay();
+    });
+    
+    db.collection('messages').orderBy('timestamp', 'desc').onSnapshot((snapshot) => {
+        currentData.messages = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                timestamp: normalizeTimestamp(data.timestamp)
+            };
+        });
+        
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('tab-home').classList.add('active');
+        
+        displayTodayMessages();
+        displayUnreadMessages();
+        renderCalendar();
+    });
+}
+
+function updateStatusDisplay() {
+    const loc = locMap[currentData.location] || locMap.going_home;
+    document.getElementById('locationEmoji').textContent = loc.e;
+    document.getElementById('locationText').textContent = loc.t;
+    if(currentData.locationUpdated) document.getElementById('locationTime').textContent = formatTime(currentData.locationUpdated);
+    
+    const hun = hunMap[currentData.hunger] || hunMap.not_hungry;
+    document.getElementById('hungerEmoji').textContent = hun.e;
+    document.getElementById('hungerText').textContent = hun.t;
+    if(currentData.hungerUpdated) document.getElementById('hungerTime').textContent = formatTime(currentData.hungerUpdated);
+}
+
+function displayTodayMessages() {
+    const container = document.getElementById('todayMessages');
+    const today = getTodayKST();
+    const msgs = (currentData.messages || []).filter(m => {
+        if (!m.timestamp) return false;
+        return m.timestamp.startsWith(today) && m.type !== 'calendar';
+    });
+    
+    if(!msgs.length) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-emoji">📭</div><p>오늘의 메시지가 없습니다</p></div>';
+        document.getElementById('unreadBadge').style.display = 'none';
+        return;
+    }
+    
+    const grouped = {};
+    msgs.forEach(m => {
+        const timeKey = m.timestamp.substring(0, 16);
+        const key = m.sender + '_' + timeKey;
+        if(!grouped[key]) grouped[key] = { sender: m.sender, time: timeKey, items: [], ids: [], read: true };
+        grouped[key].items.push(m);
+        grouped[key].ids.push(m.id);
+        if(m.sender === 'dad' && !m.read) grouped[key].read = false;
+    });
+    
+    const unreadCount = Object.values(grouped).filter(g => g.sender === 'dad' && !g.read).length;
+    const badge = document.getElementById('unreadBadge');
+    if(unreadCount > 0) {
+        badge.textContent = unreadCount + '개 안읽음';
+        badge.style.display = 'inline';
+    } else {
+        badge.style.display = 'none';
+    }
+    
+    let html = '';
+    Object.values(grouped).sort((a,b) => b.time.localeCompare(a.time)).forEach(g => {
+        const time = formatTimeHHMM(g.time);
+        if(g.sender === 'dad') {
+            html += `<div class="message-card">
+                <div class="message-card-header">
+                    <span class="message-card-time">아버지 ${time}</span>
+                    <div class="message-card-status">
+                        <span class="message-card-read ${g.read ? 'read' : 'unread'}">${g.read ? '읽음' : '안읽음'}</span>
+                        <button class="message-card-delete" onclick="deleteMessages('${g.ids.join(',')}')">🗑</button>
+                    </div>
+                </div>`;
+            g.items.forEach(item => {
+                const icons = {message: '💬', advice: '❤️', memo: '📝'};
+                const labels = {message: '하고싶은 말', advice: '당부', memo: '메모'};
+                html += `<div class="message-card-item">
+                    <div class="message-card-icon">${icons[item.type] || '💬'}</div>
+                    <div class="message-card-content">
+                        <div class="message-card-label">${labels[item.type] || '메시지'}</div>
+                        ${item.content}
+                    </div>
+                </div>`;
+            });
+            html += `</div>`;
+        } else {
+            g.items.forEach(item => {
+                html += `<div class="dayoung-message">
+                    <div class="dayoung-message-header">
+                        <span class="dayoung-message-time">다영 ${time}</span>
+                        <button class="message-card-delete" onclick="deleteMessage('${item.id}')">🗑</button>
+                    </div>
+                    <div class="dayoung-message-content">${item.content}</div>
+                </div>`;
+            });
+        }
+    });
+    container.innerHTML = html;
+}
+
+function displayUnreadMessages() {
+    const container = document.getElementById('unreadMessages');
+    const unread = (currentData.messages || []).filter(m => m.sender === 'dad' && !m.read);
+    
+    if(!unread.length) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-emoji">✨</div><p>모두 읽었습니다</p></div>';
+        return;
+    }
+    
+    const grouped = {};
+    unread.forEach(m => {
+        const timeKey = m.timestamp.substring(0, 16);
+        if(!grouped[timeKey]) grouped[timeKey] = { time: timeKey, items: [], ids: [] };
+        grouped[timeKey].items.push(m);
+        grouped[timeKey].ids.push(m.id);
+    });
+    
+    let html = '';
+    Object.values(grouped).sort((a,b) => b.time.localeCompare(a.time)).forEach(g => {
+        const time = formatTimeHHMM(g.time);
+        html += `<div class="message-card">
+            <div class="message-card-header">
+                <span class="message-card-time">아버지 ${time}</span>
+                <span class="message-card-read unread">안읽음</span>
+            </div>`;
+        g.items.forEach(item => {
+            const icons = {message:'💬', advice:'❤️', memo:'📝'};
+            const labels = {message: '하고싶은 말', advice: '당부', memo: '메모'};
+            html += `<div class="message-card-item">
+                <div class="message-card-icon">${icons[item.type]||'💬'}</div>
+                <div class="message-card-content">
+                    <div class="message-card-label">${labels[item.type] || '메시지'}</div>
+                    ${item.content}
+                </div>
+            </div>`;
+        });
+        html += '</div>';
+    });
+    container.innerHTML = html;
+}
+
+async function markAllRead() {
+    const unreadIds = (currentData.messages || []).filter(m => m.sender === 'dad' && !m.read).map(m => m.id);
+    if(!unreadIds.length) return;
+    try {
+        const batch = db.batch();
+        unreadIds.forEach(id => batch.update(db.collection('messages').doc(id), { read: true }));
+        await batch.commit();
+        showToast('모두 읽음 표시 완료');
+    } catch(e) { showToast('실패'); }
+}
+
+async function deleteMessage(id) {
+    if(!confirm('삭제할까요?')) return;
+    try {
+        await db.collection('messages').doc(id).delete();
+        showToast('삭제 완료');
+    } catch(e) { showToast('삭제 실패'); }
+}
+
+async function deleteMessages(ids) {
+    if(!confirm('삭제할까요?')) return;
+    try {
+        const batch = db.batch();
+        ids.split(',').forEach(id => batch.delete(db.collection('messages').doc(id)));
+        await batch.commit();
+        showToast('삭제 완료');
+    } catch(e) { showToast('삭제 실패'); }
+}
+
+async function saveFatherMemo() {
+    const msg = document.getElementById('fatherMessage').value.trim();
+    const adv = document.getElementById('fatherAdvice').value.trim();
+    const memo = document.getElementById('fatherMemo').value.trim();
+    if(!msg && !adv && !memo) { showToast('내용을 입력하세요'); return; }
+    
+    try {
+        const timestamp = getKSTTimestamp();
+        const batch = db.batch();
+        if(msg) batch.set(db.collection('messages').doc(), { sender: 'dad', type: 'message', content: msg, timestamp, read: false });
+        if(adv) batch.set(db.collection('messages').doc(), { sender: 'dad', type: 'advice', content: adv, timestamp, read: false });
+        if(memo) batch.set(db.collection('messages').doc(), { sender: 'dad', type: 'memo', content: memo, timestamp, read: false });
+        await batch.commit();
+        
+        document.getElementById('fatherMessage').value = '';
+        document.getElementById('fatherAdvice').value = '';
+        document.getElementById('fatherMemo').value = '';
+        clearDraftTime('fatherMessageDraftTime');
+        clearDraftTime('fatherAdviceDraftTime');
+        clearDraftTime('fatherMemoDraftTime');
+        showToast('저장 완료!');
+    } catch(e) { showToast('저장 실패'); }
+}
+
+async function saveDayoungStatus() {
+    const msg = document.getElementById('dayoungMessage').value.trim();
+    if(!selectedLocation && !selectedHunger && !msg) { showToast('변경할 내용을 선택하세요'); return; }
+    
+    try {
+        const timestamp = getKSTTimestamp();
+        const batch = db.batch();
+        const statusRef = db.collection('status').doc('current');
+        const statusUpdate = {};
+        if(selectedLocation) { statusUpdate.location = selectedLocation; statusUpdate.locationUpdated = timestamp; }
+        if(selectedHunger) { statusUpdate.hunger = selectedHunger; statusUpdate.hungerUpdated = timestamp; }
+        if(Object.keys(statusUpdate).length > 0) batch.set(statusRef, statusUpdate, { merge: true });
+        if(msg) batch.set(db.collection('messages').doc(), { sender: 'dayoung', type: 'message', content: msg, timestamp });
+        await batch.commit();
+        
+        document.getElementById('dayoungMessage').value = '';
+        selectedLocation = null;
+        selectedHunger = null;
+        document.querySelectorAll('.status-option').forEach(o => o.classList.remove('selected'));
+        clearDraftTime('dayoungMessageDraftTime');
+        showToast('저장 완료!');
+    } catch(e) { showToast('저장 실패'); }
+}
+
+function renderCalendar() {
+    const year = currentMonth.getFullYear(), month = currentMonth.getMonth();
+    document.getElementById('calendarTitle').textContent = `${year}년 ${month + 1}월`;
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    const todayStr = getTodayKST();
+    const datesWithData = new Set();
+    (currentData.messages || []).forEach(m => { if(m.timestamp) datesWithData.add(m.timestamp.split('T')[0]); });
+    
+    let html = '';
+    for(let i = 0; i < firstDay; i++) {
+        const d = new Date(year, month, 0 - firstDay + i + 1).getDate();
+        html += `<div class="calendar-day other-month">${d}</div>`;
+    }
+    for(let d = 1; d <= lastDate; d++) {
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const isToday = dateStr === todayStr;
+        const hasData = datesWithData.has(dateStr);
+        const isSelected = selectedDate === dateStr;
+        html += `<div class="calendar-day${isToday?' today':''}${hasData?' has-data':''}${isSelected?' selected':''}" onclick="selectDate('${dateStr}')">${d}</div>`;
+    }
+    document.getElementById('calendarDays').innerHTML = html;
+}
+
+function changeMonth(delta) { currentMonth.setMonth(currentMonth.getMonth() + delta); renderCalendar(); }
+function selectDate(dateStr) { selectedDate = dateStr; renderCalendar(); showDayDetail(dateStr); }
+
+function showDayDetail(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    document.getElementById('dayDetailTitle').textContent = `${parseInt(m)}월 ${parseInt(d)}일 기록`;
+    document.getElementById('dayDetail').style.display = 'block';
+    
+    const entries = (currentData.messages || []).filter(msg => msg.timestamp && msg.timestamp.startsWith(dateStr));
+    const container = document.getElementById('dayEntries');
+    
+    if(!entries.length) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-emoji">📝</div><p>기록이 없습니다</p></div>';
+    } else {
+        const grouped = {};
+        entries.forEach(m => {
+            const timeKey = m.timestamp.substring(0, 16);
+            const key = m.sender + '_' + timeKey;
+            if(!grouped[key]) grouped[key] = { sender: m.sender, time: timeKey, items: [], ids: [] };
+            grouped[key].items.push(m);
+            grouped[key].ids.push(m.id);
+        });
+        
+        let html = '';
+        Object.values(grouped).sort((a,b) => b.time.localeCompare(a.time)).forEach(g => {
+            const time = formatTimeHHMM(g.time);
+            if(g.sender === 'dad') {
+                html += `<div class="message-card">
+                    <div class="message-card-header">
+                        <span class="message-card-time">아버지 ${time}</span>
+                        <button class="message-card-delete" onclick="deleteMessages('${g.ids.join(',')}')">🗑</button>
+                    </div>`;
+                g.items.forEach(item => {
+                    const icons = {message:'💬', advice:'❤️', memo:'📝', calendar:'📅'};
+                    html += `<div class="message-card-item">
+                        <div class="message-card-icon">${icons[item.type]||'💬'}</div>
+                        <div class="message-card-content">${item.content}</div>
+                    </div>`;
+                    if(item.photo) html += `<img src="${item.photo}" style="max-width:100%;border-radius:8px;margin-top:8px">`;
+                });
+                html += '</div>';
+            } else {
+                g.items.forEach(item => {
+                    html += `<div class="dayoung-message">
+                        <div class="dayoung-message-header">
+                            <span class="dayoung-message-time">다영 ${time}</span>
+                            <button class="message-card-delete" onclick="deleteMessage('${item.id}')">🗑</button>
+                        </div>
+                        <div class="dayoung-message-content">${item.content}</div>
+                    </div>`;
+                });
+            }
+        });
+        container.innerHTML = html;
+    }
+    document.getElementById('calendarMemo').value = '';
+    document.getElementById('photoPreview').style.display = 'none';
+    photoData = null;
+}
+
+function previewPhoto(e) {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+        photoData = ev.target.result;
+        document.getElementById('photoPreview').src = photoData;
+        document.getElementById('photoPreview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+async function saveCalendarEntry() {
+    const memo = document.getElementById('calendarMemo').value.trim();
+    if(!memo && !photoData) { showToast('내용을 입력하세요'); return; }
+    if(!selectedDate) { showToast('날짜를 선택하세요'); return; }
+    try {
+        await db.collection('messages').add({
+            sender: 'dad', type: 'calendar',
+            content: memo || '사진', photo: photoData || null,
+            timestamp: getKSTTimestamp(), date: selectedDate
+        });
+        showDayDetail(selectedDate);
+        document.getElementById('calendarMemo').value = '';
+        clearDraftTime('calendarDraftTime');
+        document.getElementById('photoPreview').style.display = 'none';
+        photoData = null;
+        showToast('저장 완료!');
+    } catch(e) { showToast('저장 실패'); }
+}
+
+function showPasswordModal() {
+    document.getElementById('passwordModal').classList.add('active');
+    document.getElementById('passwordInput').value = '';
+    setTimeout(() => document.getElementById('passwordInput').focus(), 100);
+}
+function closePasswordModal() { document.getElementById('passwordModal').classList.remove('active'); }
+function checkPassword() {
+    if(document.getElementById('passwordInput').value === DAYOUNG_PW) {
+        closePasswordModal();
+        document.getElementById('dayoungLocked').style.display = 'none';
+        document.getElementById('dayoungUnlocked').style.display = 'block';
+        showToast('잠금 해제!');
+        checkDayoungPush();
+    } else {
+        showToast('비밀번호가 틀렸습니다');
+        document.getElementById('passwordInput').value = '';
+    }
+}
+document.getElementById('passwordInput').addEventListener('keypress', e => { if(e.key === 'Enter') checkPassword(); });
+
+async function registerSW() {
+    if(!('serviceWorker' in navigator)) return;
+    const reg = await navigator.serviceWorker.register('./sw.js');
+    if(reg.waiting) showUpdateNotice();
+    reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if(!nw) return;
+        nw.addEventListener('statechange', () => {
+            if(nw.state === 'installed' && navigator.serviceWorker.controller) showUpdateNotice();
+        });
+    });
+    navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
+}
+
+function showUpdateNotice() { document.getElementById('updateNotice')?.classList.add('show'); }
+
+async function applyUpdate() {
+    try {
+        const reg = await navigator.serviceWorker.ready;
+        if(reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        else await refreshAppCache();
+    } catch(e) { showToast('업데이트 실패'); }
+}
+
+async function refreshAppCache() {
+    showToast('캐시 정리 중...');
+    if('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+    }
+    if('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    window.location.reload();
+}
+
+async function checkDayoungPush() {
+    if(!("PushManager" in window)) return;
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    document.getElementById("dayoungPushBanner").classList.toggle("hidden", !!sub);
+}
+
+async function checkPush() {
+    if(!('PushManager' in window)) return;
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    document.getElementById('pushBanner').classList.toggle('hidden', !!sub);
+}
+
+async function subscribePushDayoung() {
+    try {
+        const perm = await Notification.requestPermission();
+        if(perm !== "granted") { showToast("알림 권한이 거부됨"); return; }
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: urlB64(VAPID_KEY)});
+        await db.collection('subscriptions').doc('dayoung').set({
+            subscription: JSON.parse(JSON.stringify(sub)),
+            role: 'dayoung', updatedAt: getKSTTimestamp()
+        });
+        document.getElementById("dayoungPushBanner").classList.add("hidden");
+        showToast("알림 등록 완료!");
+    } catch(e) { showToast("알림 등록 실패"); }
+}
+
+async function subscribePush() {
+    try {
+        const perm = await Notification.requestPermission();
+        if(perm !== 'granted') { showToast('알림 권한이 거부됨'); return; }
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: urlB64(VAPID_KEY)});
+        await db.collection('subscriptions').doc('dad').set({
+            subscription: JSON.parse(JSON.stringify(sub)),
+            role: 'dad', updatedAt: getKSTTimestamp()
+        });
+        document.getElementById('pushBanner').classList.add('hidden');
+        showToast('알림 등록 완료!');
+    } catch(e) { showToast('알림 등록 실패'); }
+}
+
+function urlB64(b64) { 
+    const p = '='.repeat((4 - b64.length % 4) % 4); 
+    const b = (b64 + p).replace(/-/g, '+').replace(/_/g, '/'); 
+    return Uint8Array.from(atob(b), c => c.charCodeAt(0)); 
+}
+
+const _draftIntervals = new Map();
+function _setDraft(pv, label) { pv.textContent = `${label}: ${formatTimeHHMM(getKSTTimestamp())} (KST)`; }
+function attachDraftTimePreview(taId, pvId, label = '저장 예정 시각') {
+    const ta = document.getElementById(taId), pv = document.getElementById(pvId);
+    if(!ta || !pv) return;
+    const start = () => { _setDraft(pv, label); if(!_draftIntervals.has(pvId)) _draftIntervals.set(pvId, setInterval(() => _setDraft(pv, label), 1000)); };
+    const stop = () => { const id = _draftIntervals.get(pvId); if(id) { clearInterval(id); _draftIntervals.delete(pvId); } if(ta.value.trim()) _setDraft(pv, label); else pv.textContent = ''; };
+    ta.addEventListener('focus', start);
+    ta.addEventListener('input', start);
+    ta.addEventListener('blur', stop);
+}
+function clearDraftTime(pvId) {
+    const pv = document.getElementById(pvId);
+    if(pv) pv.textContent = '';
+    const id = _draftIntervals.get(pvId);
+    if(id) { clearInterval(id); _draftIntervals.delete(pvId); }
+}
+function initDraftTimePreviews() {
+    attachDraftTimePreview('fatherMessage', 'fatherMessageDraftTime', '저장 예정 시각');
+    attachDraftTimePreview('fatherAdvice', 'fatherAdviceDraftTime', '저장 예정 시각');
+    attachDraftTimePreview('fatherMemo', 'fatherMemoDraftTime', '저장 예정 시각');
+    attachDraftTimePreview('calendarMemo', 'calendarDraftTime', '저장 예정 시각');
+    attachDraftTimePreview('dayoungMessage', 'dayoungMessageDraftTime', '저장 예정 시각');
+}
+
+function formatTime(ts) {
+    if (!ts) return '';
+    const match = ts.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if (match) {
+        const [, year, month, day, hour, minute] = match;
+        const h = parseInt(hour);
+        const ampm = h < 12 ? '오전' : '오후';
+        const h12 = h % 12 || 12;
+        return `${parseInt(year)}. ${parseInt(month)}. ${parseInt(day)}. ${ampm} ${h12}:${minute}`;
+    }
+    return ts;
+}
+
+function formatTimeHHMM(ts) {
+    if (!ts) return '';
+    const match = ts.match(/T(\d{2}):(\d{2})/);
+    if (match) return `${match[1]}:${match[2]}`;
+    return ts;
+}
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
